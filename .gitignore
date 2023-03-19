@@ -47,5 +47,6 @@ dist/**
 package.nls.*.json
 l10n/
 
-data
+data/*
+text/*
 .vscode
