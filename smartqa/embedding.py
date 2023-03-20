@@ -59,7 +59,9 @@ def embedding_paragraph_bert(text:str):
     embeddings = outputs.last_hidden_state[0]
 
     # 输出结果
-    return embeddings.mean(dim=0)
+    t = embeddings.mean(dim=0)
+    t = t.detach().numpy()
+    return t.tolist()
 
 
 def embedding_article(article:str, embedding_f):

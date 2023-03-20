@@ -98,6 +98,6 @@ class RawTextProcessor:
                 else:
                     
                     last_title_flag = False
-                res.append(line)
+                res.append(line.strip())
                 
         return list(reversed(res))
