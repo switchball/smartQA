@@ -1,14 +1,22 @@
 import re
 import numpy as np 
 import openai
+import torch
+from typing import List
 from concurrent.futures import ThreadPoolExecutor
 from transformers import AutoTokenizer, AutoModel
 
 
 pool = ThreadPoolExecutor(128)
-model_name = 'bert-base-uncased'
+model_name = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModel.from_pretrained(model_name)
+
+#Mean Pooling - Take attention mask into account for correct averaging
+def mean_pooling(model_output, attention_mask):
+    token_embeddings = model_output[0] #First element of model_output contains all token embeddings
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
 
 def split_article(article:str, max_length:int=2048):
     # 清理文章文本，去掉多余的空格和换行符
@@ -49,6 +57,7 @@ def embedding_paragraph_openai(article:str):
     vector = response["data"][0]["embedding"]
     return vector
 
+
 def embedding_paragraph_bert(text:str):
 
     # 使用tokenizer将文本转换为模型输入格式
@@ -62,6 +71,23 @@ def embedding_paragraph_bert(text:str):
     t = embeddings.mean(dim=0)
     t = t.detach().numpy()
     return t.tolist()
+
+
+def embedding_paragraph_bert_batched(sentences: List[str]):
+    """
+    param:  senetences: list of orginal text
+    return: senetence_embeddings: numpy array of shape (<len of senetences>, <size of embedding>)
+    """
+    # Tokenize sentences
+    encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
+
+    # Compute token embeddings
+    with torch.no_grad():
+        model_output = model(**encoded_input)
+    
+    # Perform pooling. In this case, max pooling.
+    sentence_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
+    return sentence_embeddings.detach().numpy()
 
 
 def embedding_article(article:str, embedding_f):
