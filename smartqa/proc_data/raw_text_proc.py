@@ -72,7 +72,7 @@ class RawTextProcessor:
         
         return False
 
-    def proc_raw_text(self, text:str) -> str:
+    def proc_raw_text(self, text:str) -> List[str]:
         lines = text.splitlines()
         lines = [l.strip() for l in lines if l.strip()]
         fn = lambda l : not self.if_line_dirty(l)
@@ -101,3 +101,10 @@ class RawTextProcessor:
                 res.append(line.strip())
                 
         return list(reversed(res))
+    
+    def proc_file(self, file_path, out_path) -> None:
+        with open(file_path, "r", encoding="utf-8") as f, open(out_path, "w", encoding="utf-8") as g:
+            text = f.read()
+            lines = self.merge_paragraph_title(self.proc_raw_text(text))
+            g.write("\n".join(lines))
+        
