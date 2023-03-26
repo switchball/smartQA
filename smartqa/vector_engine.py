@@ -37,8 +37,13 @@ class VectorEngine:
         self.emb_fn = emb_fn
         self.index = AnnoyIndex(dim, metric=metric)
     
-    def search(self, vector, n=10) -> List[int]:
-        return self.index.get_nns_by_vector(vector, n=n)
+    def search(self, vector, n=10, threshold=None) -> List[int]:
+        indexs, dists = self.index.get_nns_by_vector(vector, n=n, include_distances=True)
+        if (isinstance(threshold, (int, float)) 
+            and len(dists) > 0 and dists[0] < threshold):
+            indexs = []
+        return indexs
+
 
     def init(self, file_path:str, indexs:List[LineOffsetIndex], batch_size=64):
         indexs.sort(key=lambda x: x.line_number)
