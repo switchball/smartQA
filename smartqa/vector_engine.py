@@ -1,7 +1,8 @@
+import numpy as np
 from typing import List, Literal, Callable
 from dataclasses import dataclass
 from itertools import islice
-import numpy as np
+from tqdm import tqdm
 from annoy import AnnoyIndex
 from .proc_data.line_indexer import LineIndexer
 
@@ -24,6 +25,16 @@ class LineOffsetIndex:
                 length=length
             ))
         return res
+
+
+def batch_iterator(data, batch_size):
+    it = iter(data)
+    while True:
+        batch_indexs = list(islice(it, batch_size))
+        if not batch_indexs:
+            break
+        yield batch_indexs
+
 
 class VectorEngine:
 
@@ -49,13 +60,11 @@ class VectorEngine:
 
     def init(self, file_path:str, indexs:List[LineOffsetIndex], batch_size=64):
         indexs.sort(key=lambda x: x.line_number)
-        indexs_it = iter(indexs)
+        total_batches = len(indexs) // batch_size
+
         file = open(file_path, "rb")
         file.seek(0)
-        while True:
-            batch_indexs = list(islice(indexs_it, batch_size))
-            if not batch_indexs:
-                break
+        for batch_indexs in tqdm(batch_iterator(indexs, batch_size), total=total_batches):
             start_pos = batch_indexs[0].offset
             end_pos = batch_indexs[-1].offset + batch_indexs[-1].length
             file.seek(start_pos)
@@ -78,4 +87,14 @@ class VectorEngine:
 
         for ind,vec in zip(indexs, vectors):
             self.index.add_item(ind, vec)
-        
+    
+
+    def save(self, fn: str):
+        return self.index.save(fn)
+
+    def load(self, fn: str):
+        try:
+            return self.index.load(fn)
+        except OSError:
+            pass
+        return False

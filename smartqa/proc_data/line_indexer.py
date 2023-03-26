@@ -1,5 +1,6 @@
-from typing import Dict, Tuple, List, Union
 import os, shutil
+from typing import Dict, Tuple, List, Union
+from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -51,7 +52,7 @@ class LineIndexer:
             list(self.pool.map(proc_func, file_paths, n_file_paths))
             file_paths = n_file_paths
 
-        for file_path in file_paths:
+        for file_path in tqdm(file_paths):
             self.index_single_file(file_path)
         self.file.close()
         shutil.rmtree(tmp_dir)
@@ -62,7 +63,3 @@ class LineIndexer:
 
     def load(self, path):
         pass
-
-    
-
-# https://playgpt3.streamlit.app/?share=wnc5sgfo
