@@ -39,9 +39,11 @@ class VectorEngine:
     
     def search(self, vector, n=10, threshold=None) -> List[int]:
         indexs, dists = self.index.get_nns_by_vector(vector, n=n, include_distances=True)
-        if (isinstance(threshold, (int, float)) 
-            and len(dists) > 0 and dists[0] < threshold):
-            indexs = []
+        if isinstance(threshold, (int, float)):
+            for i in range(len(dists)):
+                if dists[i] > threshold:
+                    indexs = indexs[:i]
+                    break
         return indexs
 
 
